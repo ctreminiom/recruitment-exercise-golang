@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	".main.go/vehicle"
+	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
 )
 
 type AssemblySpot struct {

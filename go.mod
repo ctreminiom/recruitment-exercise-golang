@@ -1,4 +1,4 @@
-module .main.go
+module github.com/ctreminiom/recruitment-exercise-golang
 
 go 1.16
 

@@ -3,8 +3,8 @@ package factory
 import (
 	"fmt"
 
-	".main.go/assemblyspot"
-	".main.go/vehicle"
+	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
+	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
 )
 
 const assemblySpots int = 5
