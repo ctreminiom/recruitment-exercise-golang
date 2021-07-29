@@ -61,5 +61,10 @@ func (c *Car) TurnLeft() (string, error) {
 		return "", fmt.Errorf("Cannot turn left with stopped engine")
 	}
 
-	return fmt.Sprintf("Turned Right"), nil
+	///////////////////////////////////////////////////////////////////////////
+	//////////// The result is incorrect, it should turn left instead right ///
+	///////////////////////////////////////////////////////////////////////////
+
+	/// OLD: return fmt.Sprintf("Turned Right"), nil
+	return fmt.Sprintf("Turned Left"), nil
 }
