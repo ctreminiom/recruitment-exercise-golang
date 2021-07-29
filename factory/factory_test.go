@@ -12,7 +12,6 @@ type factoryUnitTestSuite struct {
 }
 
 func (s *factoryUnitTestSuite) SetupSuite() {
-
 	s.adapter = &Factory{}
 }
 

@@ -5,7 +5,7 @@ import (
 	"github.com/ctreminiom/recruitment-exercise-golang/factory"
 )
 
-const carsAmount = 100
+const carsAmount = 10
 
 func main() {
 	assemblesFactory := factory.New()

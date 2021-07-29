@@ -43,7 +43,24 @@ type VehicleLoggerScheme struct {
 func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme) {
 	vehicleList := f.generateVehicleLots(amountOfVehicles)
 
+	/*
+		jobs := make(chan *assemblyspot.AssemblySpot, amountOfVehicles)
+		results := make(chan *VehicleLoggerScheme, amountOfVehicles)
+
+		for w := 1; w <= assemblySpots; w++ {
+			go worker(vehicleList, jobs, f, results)
+		}
+
+		close(jobs)
+
+
+		for a := 1; a <= amountOfVehicles; a++ {
+			<-results
+		}
+	*/
+
 	for _, vehicle := range vehicleList {
+
 		fmt.Println("Assembling vehicle...")
 
 		idleSpot := <-f.AssemblingSpots
@@ -66,10 +83,37 @@ func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *Vehic
 			AssemblyStatus: vehicle.AssembleLog,
 		}
 	}
+
+}
+
+func worker(cars []vehicle.Car, spots <-chan *assemblyspot.AssemblySpot, factory *Factory, result chan<- *VehicleLoggerScheme) {
+
+	for spot := range spots {
+
+		for _, car := range cars {
+			fmt.Println("Assembling vehicle...")
+
+			spot.SetVehicle(&car)
+			vehicle, err := spot.AssembleVehicle()
+
+			if err != nil {
+				continue
+			}
+
+			vehicle.TestingLog = factory.testCar(vehicle)
+			vehicle.AssembleLog = spot.GetAssembledLogs()
+
+			result <- &VehicleLoggerScheme{
+				ID:             vehicle.Id,
+				History:        vehicle.TestingLog,
+				AssemblyStatus: vehicle.AssembleLog,
+			}
+		}
+	}
 }
 
 func (Factory) generateVehicleLots(amountOfVehicles int) []vehicle.Car {
-	var vehicles = []vehicle.Car{}
+	var vehicles []vehicle.Car
 	var index = 0
 
 	for {
