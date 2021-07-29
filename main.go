@@ -35,6 +35,10 @@ func main() {
 			break
 		}
 
+		if data.Err != nil {
+			log.Fatal(data.Err)
+		}
+
 		log.WithFields(log.Fields{
 			"vehicle-id":    data.ID,
 			"testing-logs":  data.History,
