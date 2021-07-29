@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
+	"github.com/gammazero/workerpool"
+	"log"
 )
 
 const assemblySpots int = 5
@@ -38,52 +40,53 @@ type VehicleLoggerScheme struct {
 	AssemblyStatus string
 }
 
+// StartAssemblingProcess
 //HINT: this function is currently not returning anything, make it return right away every single vehicle once assembled,
 //(Do not wait for all of them to be assembled to return them all, send each one ready over to main)
+/////// Possible Solution ////////
+// As the AssembleVehicle method can been the internal method concurrently using mutex's and waitgroups
+// The method needs 7 seconds to process the vehicle, we can reduce the execution time using a workerpool
+// I tried to create a out-the-box workerpool (documented under the worker method), but I as could not implement it at time,
+// I used a third-party called workerpool ("github.com/gammazero/workerpool") and now the program takes 7 seconds to process 5 vehicles.
 func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme) {
-	vehicleList := f.generateVehicleLots(amountOfVehicles)
 
-	/*
-		jobs := make(chan *assemblyspot.AssemblySpot, amountOfVehicles)
-		results := make(chan *VehicleLoggerScheme, amountOfVehicles)
-
-		for w := 1; w <= assemblySpots; w++ {
-			go worker(vehicleList, jobs, f, results)
-		}
-
-		close(jobs)
-
-
-		for a := 1; a <= amountOfVehicles; a++ {
-			<-results
-		}
-	*/
+	var (
+		vehicleList = f.generateVehicleLots(amountOfVehicles)
+		worker      = workerpool.New(assemblySpots)
+	)
 
 	for _, vehicle := range vehicleList {
 
-		fmt.Println("Assembling vehicle...")
+		vehicle := vehicle
 
-		idleSpot := <-f.AssemblingSpots
-		idleSpot.SetVehicle(&vehicle)
-		vehicle, err := idleSpot.AssembleVehicle()
+		worker.Submit(func() {
+			fmt.Println("Assembling vehicle...")
 
-		if err != nil {
-			continue
-		}
+			idleSpot := <-f.AssemblingSpots
+			idleSpot.SetVehicle(&vehicle)
+			vehicle, err := idleSpot.AssembleVehicle()
 
-		vehicle.TestingLog = f.testCar(vehicle)
-		vehicle.AssembleLog = idleSpot.GetAssembledLogs()
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-		idleSpot.SetVehicle(nil)
-		f.AssemblingSpots <- idleSpot
+			vehicle.TestingLog = f.testCar(vehicle)
+			vehicle.AssembleLog = idleSpot.GetAssembledLogs()
 
-		out <- &VehicleLoggerScheme{
-			ID:             vehicle.Id,
-			History:        vehicle.TestingLog,
-			AssemblyStatus: vehicle.AssembleLog,
-		}
+			idleSpot.SetVehicle(nil)
+			f.AssemblingSpots <- idleSpot
+
+			out <- &VehicleLoggerScheme{
+				ID:             vehicle.Id,
+				History:        vehicle.TestingLog,
+				AssemblyStatus: vehicle.AssembleLog,
+			}
+		})
+
 	}
 
+	worker.StopWait()
 }
 
 func worker(cars []vehicle.Car, spots <-chan *assemblyspot.AssemblySpot, factory *Factory, result chan<- *VehicleLoggerScheme) {
