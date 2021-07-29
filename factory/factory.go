@@ -2,7 +2,6 @@ package factory
 
 import (
 	"fmt"
-
 	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
 )
@@ -33,9 +32,15 @@ func New() *Factory {
 	return factory
 }
 
+type VehicleLoggerScheme struct {
+	ID             int
+	History        string
+	AssemblyStatus string
+}
+
 //HINT: this function is currently not returning anything, make it return right away every single vehicle once assembled,
 //(Do not wait for all of them to be assembled to return them all, send each one ready over to main)
-func (f *Factory) StartAssemblingProcess(amountOfVehicles int) {
+func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme) {
 	vehicleList := f.generateVehicleLots(amountOfVehicles)
 
 	for _, vehicle := range vehicleList {
@@ -54,6 +59,12 @@ func (f *Factory) StartAssemblingProcess(amountOfVehicles int) {
 
 		idleSpot.SetVehicle(nil)
 		f.AssemblingSpots <- idleSpot
+
+		out <- &VehicleLoggerScheme{
+			ID:             vehicle.Id,
+			History:        vehicle.TestingLog,
+			AssemblyStatus: vehicle.AssembleLog,
+		}
 	}
 }
 
