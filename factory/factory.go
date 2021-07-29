@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
@@ -37,6 +38,7 @@ type VehicleLoggerScheme struct {
 	ID             int
 	History        string
 	AssemblyStatus string
+	Err            error
 }
 
 // StartAssemblingProcess
@@ -48,6 +50,12 @@ type VehicleLoggerScheme struct {
 // I tried to create a out-the-box workerpool (documented under the worker method), but I as could not implement it at time,
 // I used a third-party called workerpool ("github.com/gammazero/workerpool") and now the program takes 7 seconds to process 5 vehicles.
 func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme) {
+
+	if amountOfVehicles == 0 {
+		out <- &VehicleLoggerScheme{
+			Err: errors.New("error!, please provide a valid amountOfVehicles value"),
+		}
+	}
 
 	var (
 		vehicleList = f.generateVehicleLots(amountOfVehicles)
