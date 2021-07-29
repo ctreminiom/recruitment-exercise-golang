@@ -5,7 +5,6 @@ import (
 	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
 	"github.com/gammazero/workerpool"
-	"log"
 )
 
 const assemblySpots int = 5
@@ -60,14 +59,12 @@ func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *Vehic
 		vehicle := vehicle
 
 		worker.Submit(func() {
-			fmt.Println("Assembling vehicle...")
 
 			idleSpot := <-f.AssemblingSpots
 			idleSpot.SetVehicle(&vehicle)
 			vehicle, err := idleSpot.AssembleVehicle()
 
 			if err != nil {
-				log.Println(err)
 				return
 			}
 
