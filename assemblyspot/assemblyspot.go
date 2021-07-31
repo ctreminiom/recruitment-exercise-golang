@@ -34,10 +34,10 @@ type AssembleVehicleResult struct {
 }
 
 //hint: improve this function to execute this process concurrenlty
-func (s *AssemblySpot) AssembleVehicle() (*vehicle.Car, error) {
+func (s *AssemblySpot) AssembleVehicle(result chan<- *vehicle.Car, chErr chan<- error) {
 
 	if s.vehicleToAssemble == nil {
-		return nil, errors.New("no vehicle set to start assembling")
+		chErr <- errors.New("no vehicle set to start assembling")
 	}
 
 	wg := sync.WaitGroup{}
@@ -53,67 +53,107 @@ func (s *AssemblySpot) AssembleVehicle() (*vehicle.Car, error) {
 
 	wg.Wait()
 
-	return s.vehicleToAssemble, nil
+	result <- s.vehicleToAssemble
+
+	//return s.vehicleToAssemble, nil
 }
 
 func (s *AssemblySpot) assembleChassis(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Chassis = "Assembled"
+	s.mutex.Unlock()
+
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Chassis at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleTires(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Tires = "Assembled"
+	s.mutex.Unlock()
+
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Tires at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleEngine(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Engine = "Assembled"
+	s.mutex.Unlock()
+
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Engine at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleElectronics(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Electronics = "Assembled"
+	s.mutex.Unlock()
+
+	// Simulate work
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Electronics at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleDash(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Dash = "Assembled"
+	s.mutex.Unlock()
+
+	// Simulate work
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Dash at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleSeats(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Sits = "Assembled"
+	s.mutex.Unlock()
+
+	// Simulate work
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Sits at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
+
 	wg.Done()
 }
 
 func (s *AssemblySpot) assembleWindows(wg *sync.WaitGroup) {
 	s.mutex.Lock()
 	s.vehicleToAssemble.Windows = "Assembled"
+	s.mutex.Unlock()
+
+	// Simulate work
 	time.Sleep(1 * time.Second)
+
+	s.mutex.Lock()
 	s.assemblyLog += fmt.Sprintf("Windows at [%s], ", time.Now().Format("2006-01-02 15:04:05.000"))
 	s.mutex.Unlock()
 	wg.Done()

@@ -2,10 +2,8 @@ package factory
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ctreminiom/recruitment-exercise-golang/assemblyspot"
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
-	"github.com/gammazero/workerpool"
 )
 
 const assemblySpots int = 5
@@ -49,36 +47,28 @@ type VehicleLoggerScheme struct {
 // The method needs 7 seconds to process the vehicle, we can reduce the execution time using a workerpool
 // I tried to create a out-the-box workerpool (documented under the worker method), but I as could not implement it at time,
 // I used a third-party called workerpool ("github.com/gammazero/workerpool") and now the program takes 7 seconds to process 5 vehicles.
-func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme) {
+func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *VehicleLoggerScheme, chErr chan<- error, isCompleted chan<- bool) {
 
 	if amountOfVehicles == 0 {
-		out <- &VehicleLoggerScheme{
-			Err: errors.New("error!, please provide a valid amountOfVehicles value"),
-		}
+		chErr <- errors.New("error!, please provide a valid amountOfVehicles value")
 	}
 
-	var (
-		vehicleList = f.generateVehicleLots(amountOfVehicles)
-		worker      = workerpool.New(assemblySpots)
-	)
+	var vehicleList = f.generateVehicleLots(amountOfVehicles)
+	for _, car := range vehicleList {
 
-	for _, vehicle := range vehicleList {
+		idleSpot := <-f.AssemblingSpots
+		idleSpot.SetVehicle(&car)
 
-		vehicle := vehicle
+		result := make(chan *vehicle.Car)
+		chError := make(chan error)
 
-		worker.Submit(func() {
+		go idleSpot.AssembleVehicle(result, chError)
 
-			idleSpot := <-f.AssemblingSpots
-			idleSpot.SetVehicle(&vehicle)
-			vehicle, err := idleSpot.AssembleVehicle()
+		select {
 
-			if err != nil {
-				return
-			}
-
+		case vehicle := <-result:
 			vehicle.TestingLog = f.testCar(vehicle)
 			vehicle.AssembleLog = idleSpot.GetAssembledLogs()
-
 			idleSpot.SetVehicle(nil)
 			f.AssemblingSpots <- idleSpot
 
@@ -87,37 +77,13 @@ func (f *Factory) StartAssemblingProcess(amountOfVehicles int, out chan<- *Vehic
 				History:        vehicle.TestingLog,
 				AssemblyStatus: vehicle.AssembleLog,
 			}
-		})
 
-	}
-
-	worker.StopWait()
-}
-
-func worker(cars []vehicle.Car, spots <-chan *assemblyspot.AssemblySpot, factory *Factory, result chan<- *VehicleLoggerScheme) {
-
-	for spot := range spots {
-
-		for _, car := range cars {
-			fmt.Println("Assembling vehicle...")
-
-			spot.SetVehicle(&car)
-			vehicle, err := spot.AssembleVehicle()
-
-			if err != nil {
-				continue
-			}
-
-			vehicle.TestingLog = factory.testCar(vehicle)
-			vehicle.AssembleLog = spot.GetAssembledLogs()
-
-			result <- &VehicleLoggerScheme{
-				ID:             vehicle.Id,
-				History:        vehicle.TestingLog,
-				AssemblyStatus: vehicle.AssembleLog,
-			}
+		case assembleVehicleError := <-chError:
+			chErr <- assembleVehicleError
 		}
 	}
+
+	isCompleted <- true
 }
 
 func (Factory) generateVehicleLots(amountOfVehicles int) []vehicle.Car {

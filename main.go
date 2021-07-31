@@ -25,25 +25,27 @@ func main() {
 	// 3. The StartAssemblingProcess returns the status of each iteration and it stores the metadata on the channel
 	// 4. Runs the StartAssemblingProcess method with the channels concurrently.
 	// 5. Execute for loop with the select clause in order to print the status of each vehicle integration.
-	out := make(chan *factory.VehicleLoggerScheme, carsAmount)
-	go assemblesFactory.StartAssemblingProcess(carsAmount, out)
+	listener := make(chan *factory.VehicleLoggerScheme)
+	chError := make(chan error)
+	isCompleted := make(chan bool)
+
+	go assemblesFactory.StartAssemblingProcess(carsAmount, listener, chError, isCompleted)
 
 	for {
-		data, ok := <-out
+		select {
 
-		if !ok {
-			break
+		case event := <-listener:
+			log.WithFields(log.Fields{
+				"vehicle-id":    event.ID,
+				"testing-logs":  event.History,
+				"assemble-logs": event.AssemblyStatus,
+			}).Info("Vehicle Assembled :)")
+
+		case appError := <-chError:
+			panic(appError)
+
+		case <-isCompleted:
+			return
 		}
-
-		if data.Err != nil {
-			log.Fatal(data.Err)
-		}
-
-		log.WithFields(log.Fields{
-			"vehicle-id":    data.ID,
-			"testing-logs":  data.History,
-			"assemble-logs": data.AssemblyStatus,
-		}).Info("Vehicle Assembled :)")
 	}
-
 }
