@@ -2,41 +2,9 @@ package factory
 
 import (
 	"github.com/ctreminiom/recruitment-exercise-golang/vehicle"
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
-
-func TestFactory_StartAssemblingProcess(t *testing.T) {
-
-	type args struct {
-		amountOfVehicles int
-		out              chan<- *VehicleLoggerScheme
-	}
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "StartAssemblingProcessWhenTheParametersAreCorrect",
-			args: args{
-				amountOfVehicles: 5,
-				out:              make(chan *VehicleLoggerScheme, 10),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := New()
-			f.StartAssemblingProcess(tt.args.amountOfVehicles, tt.args.out)
-
-			assert.NotEqual(t, tt.args.out, nil)
-		})
-	}
-}
 
 func TestFactory_generateVehicleLots(t *testing.T) {
 
@@ -137,15 +105,28 @@ func TestFactory_testCar(t *testing.T) {
 
 			idleSpot := <-f.AssemblingSpots
 			idleSpot.SetVehicle(tt.args.car)
-			vehicle, err := idleSpot.AssembleVehicle()
 
-			if err != nil {
-				return
+			result := make(chan *vehicle.Car)
+			chError := make(chan error)
+
+			go idleSpot.AssembleVehicle(result, chError)
+
+			select {
+
+			case vehicle := <-result:
+				vehicle.TestingLog = f.testCar(vehicle)
+				vehicle.AssembleLog = idleSpot.GetAssembledLogs()
+				idleSpot.SetVehicle(nil)
+				f.AssemblingSpots <- idleSpot
+
+				if got := f.testCar(vehicle); got != tt.want {
+					t.Errorf("testCar() = %v, want %v", got, tt.want)
+				}
+
+			case assembleVehicleError := <-chError:
+				t.Error(assembleVehicleError)
 			}
 
-			if got := f.testCar(vehicle); got != tt.want {
-				t.Errorf("testCar() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
